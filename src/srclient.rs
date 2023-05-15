@@ -30,11 +30,11 @@ pub mod srclient {
     }
 
     async fn fetch_messages(req: SrRequest) -> Result<String, SrError> {
-        println!("Fetching page: {}", req.page);
         let url = format!(
             "http://api.sr.se/api/v2/traffic/messages?format={}&indent={}",
             req.format, req.indent
         );
+
         let client = reqwest::Client::new();
 
         match client.get(url).send().await {

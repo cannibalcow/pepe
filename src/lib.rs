@@ -41,7 +41,7 @@ pub mod sr {
         }
     }
 
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize, Clone)]
     pub struct Message {
         pub id: i32,
         #[serde(deserialize_with = "date_from_str")]

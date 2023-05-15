@@ -1,14 +1,17 @@
 pub mod srclient;
+pub mod srpoll;
+pub mod srws;
 
 use std::time::Duration;
 
 use async_trait::async_trait;
 use ezsockets::Error;
-use srclient::srclient::fetch_page;
-use tokio;
+use pepe::sr::Message;
+use srpoll::srpoll::{SrPollOptions, SrPoller};
+use tokio::{self, sync::mpsc};
 
 type SessionId = u16;
-type Session = ezsockets::Session<SessionId, Message>;
+type Session = ezsockets::Session<SessionId, CounterMessage>;
 
 struct EchoServer {}
 
@@ -26,7 +29,7 @@ impl Drop for EchoSession {
 }
 
 #[derive(Debug)]
-enum Message {
+enum CounterMessage {
     Increment,
     Share,
 }
@@ -47,11 +50,11 @@ impl ezsockets::ServerExt for EchoServer {
             |handle| {
                 let echo_task = tokio::spawn({
                     let ss = handle.clone();
-                    ss.call(Message::Increment);
+                    ss.call(CounterMessage::Increment);
                     async move {
                         loop {
-                            ss.call(Message::Increment);
-                            ss.call(Message::Share);
+                            ss.call(CounterMessage::Increment);
+                            ss.call(CounterMessage::Share);
                             tokio::time::sleep(Duration::from_secs(1)).await;
                         }
                     }
@@ -87,7 +90,7 @@ impl ezsockets::ServerExt for EchoServer {
 impl ezsockets::SessionExt for EchoSession {
     type ID = SessionId;
     type Args = ();
-    type Call = Message;
+    type Call = CounterMessage;
 
     fn id(&self) -> &Self::ID {
         &self.id
@@ -104,8 +107,8 @@ impl ezsockets::SessionExt for EchoSession {
 
     async fn on_call(&mut self, call: Self::Call) -> Result<(), Error> {
         match call {
-            Message::Increment => self.counter += 1,
-            Message::Share => self.handle.text(format!("counter: {}", self.counter)),
+            CounterMessage::Increment => self.counter += 1,
+            CounterMessage::Share => self.handle.text(format!("counter: {}", self.counter)),
         };
         Ok(())
     }
@@ -113,6 +116,19 @@ impl ezsockets::SessionExt for EchoSession {
 
 #[tokio::main()]
 async fn main() {
+    let (tx, mut rx) = mpsc::channel::<Message>(1024);
+    let options = SrPollOptions::new(10);
+    let mut poller = SrPoller::new(tx, options);
+
+    tokio::spawn(async move {
+        poller.poll().await;
+    });
+
+    while let Some(data) = rx.recv().await {
+        println!("Recived: {}", data);
+    }
+
+    /*
     match fetch_page(1).await {
         Ok(page) => {
             for m in &page.messages {
@@ -123,6 +139,7 @@ async fn main() {
         Err(e) => println!("error: {:?}", e),
     };
 
+    */
     /*
     let req = SrRequest {
         format: String::from("json"),
