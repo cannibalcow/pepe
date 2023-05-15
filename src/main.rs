@@ -1,8 +1,10 @@
+pub mod srclient;
+
 use std::time::Duration;
 
 use async_trait::async_trait;
 use ezsockets::Error;
-use pepe::sr;
+use srclient::srclient::fetch_page;
 use tokio;
 
 type SessionId = u16;
@@ -111,16 +113,12 @@ impl ezsockets::SessionExt for EchoSession {
 
 #[tokio::main()]
 async fn main() {
-    match sr::load_all_messages().await {
-        Ok(messages) => {
-            for m in &messages {
-                println!("=====================================");
-                println!("= Location:    {}", m.exactlocation);
-                println!("= Description: {}", m.description);
-                println!("= Category:    {}", m.subcategory);
-                println!("=====================================")
+    match fetch_page(1).await {
+        Ok(page) => {
+            for m in &page.messages {
+                println!("{}", m);
             }
-            println!("Number of message: {}", messages.len())
+            println!("Number of message: {}", page.pagination.totalpages)
         }
         Err(e) => println!("error: {:?}", e),
     };

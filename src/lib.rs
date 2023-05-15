@@ -1,4 +1,6 @@
 pub mod sr {
+    use std::fmt::Display;
+
     use chrono::DateTime;
     use chrono::{NaiveDateTime, Utc};
     use chrono_tz::Tz;
@@ -52,16 +54,26 @@ pub mod sr {
         pub subcategory: String,
     }
 
+    impl Display for Message {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            writeln!(f, "id: i32,")?;
+            writeln!(f, "Created Date: {}", self.createddate)?;
+            writeln!(f, "Exact location: {}", self.exactlocation)?;
+            writeln!(f, "Description: {}", self.description)?;
+            writeln!(f, "Latitude: {}", self.latitude)?;
+            writeln!(f, "Longitude: {}", self.longitude)?;
+            writeln!(f, "category: {}", self.category)?;
+            writeln!(f, "subcategory: {}", self.subcategory)?;
+            Ok(())
+        }
+    }
+
     #[derive(Debug, Serialize, Deserialize)]
     pub enum Category {
         Vagtrafik = 0,
         Kollektivtrafik = 1,
         PlaneradStorning = 2,
         Ovrigt = 3,
-    }
-
-    fn from_json(json: &str) -> Result<Sr, SrError> {
-        serde_json::from_str(json).map_err(|_| SrError::ParseError)
     }
 
     fn date_from_str<'de, D>(deserializer: D) -> Result<DateTime<Tz>, D::Error>
@@ -81,71 +93,6 @@ pub mod sr {
             .and_local_timezone(Utc)
             .unwrap();
         Ok(r.with_timezone(&tz))
-    }
-
-    pub struct SrRequest {
-        pub format: String,
-        pub indent: bool,
-        pub page: u32,
-    }
-
-    impl SrRequest {
-        pub fn new(format: String, indent: bool, page: u32) -> Self {
-            Self {
-                format,
-                indent,
-                page,
-            }
-        }
-    }
-
-    pub async fn fetch_messages(req: SrRequest) -> Result<String, SrError> {
-        println!("Fetching page: {}", req.page);
-        let url = format!(
-            "http://api.sr.se/api/v2/traffic/messages?format={}&indent={}",
-            req.format, req.indent
-        );
-        let client = reqwest::Client::new();
-
-        match client.get(url).send().await {
-            Ok(body) => body.text().await.map_err(|e| SrError::Unknwon {
-                message: format!("Unknown error: {:?}", e),
-            }),
-            Err(e) => Err(SrError::CommunicationError {
-                message: format!("Http error: {:?}", e),
-            }),
-        }
-    }
-
-    #[derive(Debug)]
-    pub enum SrError {
-        Unknwon { message: String },
-        ParseError,
-        CommunicationError { message: String },
-    }
-
-    async fn fetch_message_to_struct(page_num: u32) -> Result<Sr, SrError> {
-        let req = SrRequest {
-            format: String::from("json"),
-            indent: false,
-            page: page_num,
-        };
-
-        let json = fetch_messages(req).await?;
-        from_json(&json)
-    }
-
-    pub async fn load_all_messages() -> Result<Vec<Message>, SrError> {
-        let page_one = fetch_message_to_struct(1).await?;
-
-        let mut messages = Vec::new();
-
-        for page_num in 1..=page_one.pagination.totalpages {
-            let mut sr = fetch_message_to_struct(page_num).await?;
-            messages.append(&mut sr.messages);
-        }
-
-        Ok(messages)
     }
 }
 
