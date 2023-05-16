@@ -3,7 +3,7 @@ pub mod srpoll {
     use std::time::{Duration, Instant};
 
     use pepe::sr::Message;
-    use tokio::sync::mpsc::Sender;
+    use tokio::sync::broadcast::Sender;
 
     use crate::srclient::srclient::fetch_page;
 
@@ -36,10 +36,10 @@ pub mod srpoll {
 
         // Todo: Fix panichandling ok. thanks. bye
         pub async fn poll(&mut self) {
+            println!("Initializing messages");
+
             if self.messages.is_empty() {
-                println!("Initializing messages");
                 let start = Instant::now();
-                //let mut msgs = load_all_messages().await.unwrap();
                 let mut msgs = fetch_page(1).await.unwrap();
                 println!("Loading messages took: {:?}", start.elapsed());
                 self.messages.append(&mut msgs.messages);
@@ -55,7 +55,7 @@ pub mod srpoll {
                 println!("Found {} new messsages.", new_messages.len());
 
                 for message in &new_messages {
-                    self.tx.send(message.clone()).await.unwrap();
+                    self.tx.send(message.clone()).unwrap();
                     self.last_message_id = message.id;
                     self.messages.push(message.clone());
                 }

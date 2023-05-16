@@ -5,10 +5,10 @@ pub mod srws;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ezsockets::Error;
-use pepe::sr::Message;
+use ezsockets::{Error, Server};
 use srpoll::srpoll::{SrPollOptions, SrPoller};
-use tokio::{self, sync::mpsc};
+use srws::srws::SrTrafficMessageServer;
+use tokio;
 
 type SessionId = u16;
 type Session = ezsockets::Session<SessionId, CounterMessage>;
@@ -116,46 +116,23 @@ impl ezsockets::SessionExt for EchoSession {
 
 #[tokio::main()]
 async fn main() {
-    let (tx, mut rx) = mpsc::channel::<Message>(1024);
+    let (tx, rx) = tokio::sync::broadcast::channel(16);
     let options = SrPollOptions::new(10);
     let mut poller = SrPoller::new(tx, options);
+    let polling_enabled = true;
 
-    tokio::spawn(async move {
-        poller.poll().await;
-    });
-
-    while let Some(data) = rx.recv().await {
-        println!("Recived: {}", data);
+    if polling_enabled {
+        tokio::spawn(async move {
+            poller.poll().await;
+        });
     }
 
-    /*
-    match fetch_page(1).await {
-        Ok(page) => {
-            for m in &page.messages {
-                println!("{}", m);
-            }
-            println!("Number of message: {}", page.pagination.totalpages)
-        }
-        Err(e) => println!("error: {:?}", e),
-    };
-
-    */
-    /*
-    let req = SrRequest {
-        format: String::from("json"),
-        indent: true,
-        page: 1,
-    };
-    let sr_response = sr::fetch_messages(req).await.unwrap();
-    println!("response: {}", sr_response);
-    let sr = Sr::from_json(&sr_response).unwrap();
-
-    println!("SR: {:?}", sr);
-
     tracing_subscriber::fmt::init();
-    let (server, _) = Server::create(|_server| EchoServer {});
+
+    let (server, _) = Server::create(|_server| SrTrafficMessageServer { rx });
+
+    println!("Starting server on port 8080");
     ezsockets::tungstenite::run(server, "127.0.0.1:8080", |_socket| async move { Ok(()) })
         .await
         .unwrap();
-        */
 }
