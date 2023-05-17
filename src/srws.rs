@@ -47,9 +47,12 @@ pub mod srws {
             unimplemented!()
         }
 
+        // TODO error handling
         async fn on_call(&mut self, call: Self::Call) -> Result<(), Error> {
             match call {
-                Actions::SendMessage { msg } => self.handle.text(format!("{}", msg)),
+                Actions::SendMessage { msg } => {
+                    self.handle.text(format!("{}", msg.to_json().unwrap()))
+                }
             };
             Ok(())
         }
@@ -77,7 +80,10 @@ pub mod srws {
                                 let new_message = rx2.recv().await;
                                 match new_message {
                                     Ok(m) => ss.call(Actions::SendMessage { msg: m }),
-                                    Err(e) => println!("Webclient error: {:?}", e),
+                                    Err(e) => {
+                                        println!("Webclient error: {:?}", e);
+                                        break;
+                                    }
                                 };
                             }
                         }

@@ -48,17 +48,25 @@ pub mod sr {
         pub createddate: DateTime<Tz>,
         pub exactlocation: String,
         pub description: String,
+        pub title: String,
         pub latitude: f32,
         pub longitude: f32,
         pub category: i32,
         pub subcategory: String,
     }
 
+    impl Message {
+        pub fn to_json(&self) -> Result<String, serde_json::Error> {
+            serde_json::to_string(&self)
+        }
+    }
+
     impl Display for Message {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            writeln!(f, "id: i32,")?;
+            writeln!(f, "id: {}", self.id)?;
             writeln!(f, "Created Date: {}", self.createddate)?;
             writeln!(f, "Exact location: {}", self.exactlocation)?;
+            writeln!(f, "Title: {}", self.title)?;
             writeln!(f, "Description: {}", self.description)?;
             writeln!(f, "Latitude: {}", self.latitude)?;
             writeln!(f, "Longitude: {}", self.longitude)?;

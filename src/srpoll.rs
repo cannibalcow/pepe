@@ -54,6 +54,9 @@ pub mod srpoll {
 
                 println!("Found {} new messsages.", new_messages.len());
 
+                // TODO remove retard
+                self.tx.send(self.messages[0].clone()).unwrap();
+
                 for message in &new_messages {
                     self.tx.send(message.clone()).unwrap();
                     self.last_message_id = message.id;
