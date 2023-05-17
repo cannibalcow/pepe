@@ -2,5 +2,5 @@
 
 ## TODO
 
-[ ] Better error handling
-[ ] Configuration arguments
+- [ ] Better error handling
+- [ ] Configuration arguments
