@@ -6,6 +6,7 @@ use ezsockets::Server;
 use srpoll::srpoll::{SrPollOptions, SrPoller};
 use srws::srws::SrTrafficMessageServer;
 use tokio;
+use tracing::{event, Level};
 
 #[tokio::main()]
 async fn main() {
@@ -24,7 +25,7 @@ async fn main() {
 
     let (server, _) = Server::create(|_server| SrTrafficMessageServer { rx });
 
-    println!("Starting server on port 8080");
+    event!(Level::INFO, "Starting server on port 8080");
     ezsockets::tungstenite::run(server, "127.0.0.1:8080", |_socket| async move { Ok(()) })
         .await
         .unwrap();

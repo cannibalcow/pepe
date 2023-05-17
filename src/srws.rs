@@ -3,6 +3,7 @@ pub mod srws {
     use ezsockets::{Error, SessionExt};
     use pepe::sr::Message;
     use tokio::sync::broadcast::Receiver;
+    use tracing::{event, Level};
 
     #[derive(Debug)]
     pub enum Actions {
@@ -81,7 +82,7 @@ pub mod srws {
                                 match new_message {
                                     Ok(m) => ss.call(Actions::SendMessage { msg: m }),
                                     Err(e) => {
-                                        println!("Webclient error: {:?}", e);
+                                        event!(Level::ERROR, "Webclient error: {:?}", e);
                                         break;
                                     }
                                 };
@@ -104,7 +105,7 @@ pub mod srws {
             &mut self,
             id: <Self::Session as ezsockets::SessionExt>::ID,
         ) -> Result<(), Error> {
-            println!("Disconnection {}", id);
+            event!(Level::ERROR, "Disconnection {}", id);
             Ok(())
         }
 

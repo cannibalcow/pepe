@@ -4,6 +4,7 @@ pub mod srpoll {
 
     use pepe::sr::Message;
     use tokio::sync::broadcast::Sender;
+    use tracing::{event, Level};
 
     use crate::srclient::srclient::fetch_page;
 
@@ -36,23 +37,21 @@ pub mod srpoll {
 
         // Todo: Fix panichandling ok. thanks. bye
         pub async fn poll(&mut self) {
-            println!("Initializing messages");
-
             if self.messages.is_empty() {
                 let start = Instant::now();
                 let mut msgs = fetch_page(1).await.unwrap();
-                println!("Loading messages took: {:?}", start.elapsed());
+                event!(Level::INFO, "Loading messages took: {:?}", start.elapsed());
                 self.messages.append(&mut msgs.messages);
             }
 
-            println!("Loaded {} messages", self.messages.len());
+            event!(Level::INFO, "Loaded {} messages", self.messages.len());
 
             loop {
                 let page = fetch_page(1).await.unwrap();
 
                 let new_messages = self.get_new_messages(page.messages);
 
-                println!("Found {} new messsages.", new_messages.len());
+                event!(Level::INFO, "Found {} new messsages.", new_messages.len());
 
                 // TODO remove retard
                 self.tx.send(self.messages[0].clone()).unwrap();

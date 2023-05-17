@@ -109,6 +109,7 @@ mod tests {
     use chrono::{NaiveDateTime, Utc};
     use chrono_tz::Tz;
     use regex::Regex;
+    use tracing::{event, Level};
 
     #[test]
     fn parse_date() {
@@ -127,7 +128,7 @@ mod tests {
 
                 let _ = r.with_timezone(&tz);
             }
-            None => println!("Could not parse: {}", test_date),
+            None => event!(Level::ERROR, "Could not parse: {}", test_date),
         };
     }
 }
