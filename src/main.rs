@@ -1,17 +1,22 @@
+pub mod args;
 pub mod srclient;
 pub mod srpoll;
 pub mod srws;
 
+use clap::Parser;
 use ezsockets::Server;
 use srpoll::srpoll::{SrPollOptions, SrPoller};
 use srws::srws::SrTrafficMessageServer;
 use tokio;
 use tracing::{event, Level};
 
-#[tokio::main()]
+use crate::args::srargs::PepeArgs;
+
+#[tokio::main]
 async fn main() {
-    let (tx, rx) = tokio::sync::broadcast::channel(16);
-    let options = SrPollOptions::new(10);
+    let args = PepeArgs::parse();
+    let (tx, rx) = tokio::sync::broadcast::channel(args.channel_capacity);
+    let options = SrPollOptions::new(args.polling_interval);
     let mut poller = SrPoller::new(tx, options);
     let polling_enabled = true;
 
@@ -25,8 +30,12 @@ async fn main() {
 
     let (server, _) = Server::create(|_server| SrTrafficMessageServer { rx });
 
-    event!(Level::INFO, "Starting server on port 8080");
-    ezsockets::tungstenite::run(server, "127.0.0.1:8080", |_socket| async move { Ok(()) })
+    args.log_configuration();
+
+    match ezsockets::tungstenite::run(server, args.bind_address(), |_socket| async move { Ok(()) })
         .await
-        .unwrap();
+    {
+        Ok(_) => (),
+        Err(err) => event!(Level::ERROR, "{}", err),
+    }
 }
