@@ -1,9 +1,10 @@
-pub mod srws {
+pub mod websocket {
     use async_trait::async_trait;
     use ezsockets::{Error, SessionExt};
-    use pepe::sr::Message;
     use tokio::sync::broadcast::Receiver;
     use tracing::{event, Level};
+
+    use crate::sr::Message;
 
     #[derive(Debug)]
     pub enum Actions {
@@ -105,7 +106,7 @@ pub mod srws {
             &mut self,
             id: <Self::Session as ezsockets::SessionExt>::ID,
         ) -> Result<(), Error> {
-            event!(Level::ERROR, "Disconnection {}", id);
+            event!(Level::INFO, "Disconnected: {}", id);
             Ok(())
         }
 

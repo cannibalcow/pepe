@@ -1,5 +1,5 @@
-pub mod srclient {
-    use pepe::sr::{Message, Sr};
+pub mod client {
+    use crate::sr::{Message, Sr};
 
     #[derive(Debug)]
     pub struct SrRequest {
@@ -48,16 +48,13 @@ pub mod srclient {
     }
 
     pub async fn fetch_page(page_num: u32) -> Result<Sr, SrError> {
-        let req = SrRequest {
-            format: String::from("json"),
-            indent: false,
-            page: page_num,
-        };
+        let req = SrRequest::new(String::from("json"), false, page_num);
 
         let json = fetch_messages(req).await?;
         from_json(&json)
     }
 
+    #[allow(dead_code)]
     pub async fn load_all_messages() -> Result<Vec<Message>, SrError> {
         let page_one = fetch_page(1).await?;
 

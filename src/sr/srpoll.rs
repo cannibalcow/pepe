@@ -1,12 +1,9 @@
-pub mod srpoll {
-
+pub mod poller {
     use std::time::{Duration, Instant};
-
-    use pepe::sr::Message;
     use tokio::sync::broadcast::Sender;
     use tracing::{event, Level};
 
-    use crate::srclient::srclient::fetch_page;
+    use crate::sr::{fetch_page, Message};
 
     pub(crate) struct SrPoller {
         messages: Vec<Message>,
@@ -47,7 +44,9 @@ pub mod srpoll {
             event!(Level::INFO, "Loaded {} messages", self.messages.len());
 
             loop {
+                let start = Instant::now();
                 let page = fetch_page(1).await.unwrap();
+                event!(Level::INFO, "Polling messages took: {:?}", start.elapsed());
 
                 let new_messages = self.get_new_messages(page.messages);
 

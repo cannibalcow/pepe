@@ -1,16 +1,13 @@
-pub mod args;
-pub mod srclient;
-pub mod srpoll;
-pub mod srws;
-
+mod config;
+mod sr;
 use clap::Parser;
+use config::PepeArgs;
 use ezsockets::Server;
-use srpoll::srpoll::{SrPollOptions, SrPoller};
-use srws::srws::SrTrafficMessageServer;
-use tokio;
+use sr::{
+    poller::{SrPollOptions, SrPoller},
+    websocket::SrTrafficMessageServer,
+};
 use tracing::{event, Level};
-
-use crate::args::srargs::PepeArgs;
 
 #[tokio::main]
 async fn main() {
