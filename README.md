@@ -5,5 +5,6 @@ Polls Swedish Radio Trafic messages and submits them on a websocket.
 ## TODO
 
 - [ ] Test
+- [ ] Modules organised
 - [ ] Better error handling
 - [x] Configuration arguments
