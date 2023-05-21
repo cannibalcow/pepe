@@ -103,7 +103,7 @@ where
 
             match NaiveDateTime::from_timestamp_millis(millis) {
                 Some(value) => Ok(value.and_local_timezone(Utc).unwrap().with_timezone(&tz)),
-                None => Err(D::Error::custom(format!("Invalid timestamp"))),
+                None => Err(D::Error::custom("Invalid timestamp".to_string())),
             }
         }
         None => Err(D::Error::custom(format!(
@@ -118,7 +118,7 @@ mod tests {
     use serde::de::value::{Error as ValueError, StrDeserializer};
     use serde::de::IntoDeserializer;
 
-    use super::{date_from_str, Pagination};
+    use super::date_from_str;
 
     #[test]
     fn deserialize_invalid_timestamp() {

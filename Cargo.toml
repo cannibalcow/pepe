@@ -19,3 +19,4 @@ regex = "1.8.1"
 chrono-tz = "0.8.2"
 lazy_static = "1.4.0"
 clap = { version = "4.3.0", features = ["derive"] }
+rand = "0.8.5"

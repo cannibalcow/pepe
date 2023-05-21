@@ -1,4 +1,6 @@
 pub mod client {
+    use std::{fmt::Display, writeln};
+
     use crate::sr::{Message, Sr};
 
     #[derive(Debug)]
@@ -13,6 +15,18 @@ pub mod client {
         Unknwon { message: String },
         ParseError,
         CommunicationError { message: String },
+    }
+
+    impl Display for SrError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                SrError::Unknwon { message } => writeln!(f, "Uknown error: {}", message),
+                SrError::ParseError => writeln!(f, "Parse error"),
+                SrError::CommunicationError { message } => {
+                    writeln!(f, "Communication Error: {}", message)
+                }
+            }
+        }
     }
 
     impl SrRequest {
