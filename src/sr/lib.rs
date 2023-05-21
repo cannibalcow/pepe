@@ -5,6 +5,7 @@ use chrono::{NaiveDateTime, Utc};
 use chrono_tz::Tz;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,6 +39,14 @@ impl Pagination {
     pub fn is_last_page(&self) -> bool {
         self.page == self.totalpages
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Category {
+    Vagtrafik = 0,
+    Kollektivtrafik = 1,
+    PlaneradStorning = 2,
+    Ovrigt = 3,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -75,14 +84,6 @@ impl Display for Message {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Category {
-    Vagtrafik = 0,
-    Kollektivtrafik = 1,
-    PlaneradStorning = 2,
-    Ovrigt = 3,
-}
-
 fn date_from_str<'de, D>(deserializer: D) -> Result<DateTime<Tz>, D::Error>
 where
     D: Deserializer<'de>,
@@ -90,43 +91,59 @@ where
     lazy_static! {
         static ref RE: Regex = Regex::new(r"/Date\((\d+)([-+]\d+)\)/").unwrap();
     }
+
     let date_text = String::deserialize(deserializer)?;
 
-    let caps = RE.captures(&date_text).unwrap();
+    match RE.captures(&date_text) {
+        Some(caps) => {
+            let tz: Tz = chrono_tz::Europe::Stockholm;
+            let millis = caps[1]
+                .parse::<i64>()
+                .map_err(|e| D::Error::custom(format!("Could not parse timestamp: {}", e)))?;
 
-    let tz: Tz = chrono_tz::Europe::Stockholm;
-    let r = NaiveDateTime::from_timestamp_millis(caps[1].parse::<i64>().unwrap().to_owned())
-        .unwrap()
-        .and_local_timezone(Utc)
-        .unwrap();
-    Ok(r.with_timezone(&tz))
+            match NaiveDateTime::from_timestamp_millis(millis) {
+                Some(value) => Ok(value.and_local_timezone(Utc).unwrap().with_timezone(&tz)),
+                None => Err(D::Error::custom(format!("Invalid timestamp"))),
+            }
+        }
+        None => Err(D::Error::custom(format!(
+            "Invalid date string: {}",
+            date_text
+        ))),
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::{NaiveDateTime, Utc};
-    use chrono_tz::Tz;
-    use regex::Regex;
-    use tracing::{event, Level};
+    use serde::de::value::{Error as ValueError, StrDeserializer};
+    use serde::de::IntoDeserializer;
+
+    use super::{date_from_str, Pagination};
 
     #[test]
-    fn parse_date() {
-        let test_date = "/Date(1682481845657+0200)/";
-        let re = Regex::new(r"/Date\((\d+)([-+]\d+)\)/").unwrap();
+    fn deserialize_invalid_timestamp() {
+        let des: StrDeserializer<ValueError> =
+            "/Date(11111111682481845657+0200)/".into_deserializer();
+        let date = date_from_str(des);
+        assert!(&date.is_err());
+        assert_eq!(
+            &date.err().unwrap().to_string(),
+            "Could not parse timestamp: number too large to fit in target type"
+        );
+    }
 
-        match re.captures(test_date) {
-            Some(caps) => {
-                let tz: Tz = chrono_tz::Europe::Stockholm;
-                let r = NaiveDateTime::from_timestamp_millis(
-                    caps[1].parse::<i64>().unwrap().to_owned(),
-                )
-                .unwrap()
-                .and_local_timezone(Utc)
-                .unwrap();
+    #[test]
+    fn deserialize_test() {
+        let des: StrDeserializer<ValueError> = "/Date(1682481845657+0200)/".into_deserializer();
+        let date = date_from_str(des).unwrap();
 
-                let _ = r.with_timezone(&tz);
-            }
-            None => event!(Level::ERROR, "Could not parse: {}", test_date),
-        };
+        assert_eq!(date.to_string(), "2023-04-26 06:04:05.657 CEST");
+    }
+
+    #[test]
+    fn deserialize_crap() {
+        let des: StrDeserializer<ValueError> = "Hestsnp".into_deserializer();
+        let date = date_from_str(des);
+        assert!(date.is_err())
     }
 }

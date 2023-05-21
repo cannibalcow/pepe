@@ -52,7 +52,7 @@ pub mod poller {
 
                 event!(Level::INFO, "Found {} new messsages.", new_messages.len());
 
-                // TODO remove retard
+                // TODO remove dummy send
                 self.tx.send(self.messages[0].clone()).unwrap();
 
                 for message in &new_messages {
